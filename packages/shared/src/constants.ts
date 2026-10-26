@@ -1,3 +1,7 @@
+export const COLLECTIONS = {
+  users: 'users',
+} as const;
+
 /** Firebase istemci yapılandırması (gizli değil); mobil uygulama ve admin paneli ortak kullanır. */
 export const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyDdjXGaCogNZqOsL8UEj9xg_JmbAs6FqHc',

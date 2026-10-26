@@ -2,14 +2,16 @@
 
 Çiftlerin ve arkadaş gruplarının İstanbul'da gezdikleri yerlerde check-in yapıp puan topladığı, birbirlerinin rotalarını takip ettiği mobil uygulama.
 
-**Durum:** Sprint 0 (Kurulum ve Planlama) tamamlandı.
+**Durum:** Sprint 0 (Kurulum ve Planlama) ve Sprint 1 (Temel Kullanıcı Sistemi ve UI Altyapısı) tamamlandı. Ayrıntılar: [docs/sprint-0-1.md](docs/sprint-0-1.md)
 
-## Sprint 0'da kurulanlar
+## Özellikler (Sprint 1)
 
-- Turborepo monoreposu: `apps/mobile`, `apps/web`, `packages/shared`, `packages/ui`
-- Expo (React Native) mobil uygulaması ve Firebase bağlantısı
-- Next.js admin paneli iskeleti
-- GitHub Actions: her pull request'te lint, tip kontrolü ve Firestore kural testleri
+- E-posta ve şifreyle kayıt olma; hesap türü seçimi (**Çift** / **Arkadaşlar**)
+- Giriş, çıkış ve oturumun korunması (uygulama kapatılıp açılsa da)
+- Giriş yapmamış kullanıcıyı giriş ekranına, yapmış olanı ana sayfaya yönlendirme
+- Cihaz temasına göre değişen açık / koyu renk paleti
+- 4 sekmeli ana yapı: Akış, Keşfet, Rotalar, Profil (ilk üçü sonraki sprintlerde doldurulacak)
+- Firestore güvenlik kuralları ve otomatik testleri
 
 ## Yapı
 
@@ -21,6 +23,7 @@
 | `packages/ui`, `packages/eslint-config`, `packages/typescript-config` | Ortak paketler (Turborepo) |
 | `firestore.rules`, `firestore-tests` | Güvenlik kuralları ve emülatör testleri |
 | `.github/workflows/ci.yml` | Her pull request'te lint, tip kontrolü ve kural testleri |
+| `docs` | Sprint raporları |
 
 ## Başlangıç
 
