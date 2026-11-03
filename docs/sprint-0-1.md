@@ -10,7 +10,7 @@
 | 2 | Firebase projesi ve servisler | ✅ Auth, Firestore · ⚠️ Storage, Functions | Firebase projesi `gezgin-rotalar` (Firestore konumu `eur3`). Proje ücretsiz **Spark** planında kalacağı için Storage ve Functions bu planda kullanılamıyor; sunucu tarafı denetimler Firestore güvenlik kurallarıyla yapılıyor, fotoğraf saklama için ücretsiz bir alternatif (Cloudinary) Sprint 4'te değerlendirilecek. | `firebase.json`, `.firebaserc`, `apps/mobile/src/firebase*.ts`, `packages/shared/src/constants.ts` |
 | 3 | UI/UX tasarımlarının Figma'da detaylandırılması | ⏳ | Görsel dil belirlendi: fildişi zemin, şişe yeşili ana renk, pirinç vurgu; başlıklar Playfair Display, metinler Manrope. Figma çalışması sürüyor. | `apps/mobile/src/constants/theme.ts` |
 | 4 | Git deposu ve monorepo yapısı | ✅ | **Turborepo** + npm workspaces. Ortak ESLint ve TypeScript ayarları ayrı paketlerde; `packages/shared` mobil ve web'in ortak tiplerini tutuyor. | `package.json`, `turbo.json`, `apps/*`, `packages/*` |
-| 5 | `create-expo-app` ile `apps/mobile` | ✅ | Expo SDK 57 + Expo Router. Şablondan kalan örnek bileşenler temizlendi; uygulama adı "Gezgin Rotalar". | `apps/mobile/package.json`, `app.json`, `tsconfig.json`, `assets/` |
+| 5 | `create-expo-app` ile `apps/mobile` | ✅ | Expo SDK 58 + Expo Router (Expo Go güncellenince 57’den yükseltildi). Şablondan kalan örnek bileşenler temizlendi; uygulama adı "Gezgin Rotalar". | `apps/mobile/package.json`, `app.json`, `tsconfig.json`, `assets/` |
 | 6 | GitHub Actions CI (lint + test) | ✅ | Her pull request'te iki iş paralel çalışıyor: bütün paketlerde lint + tip kontrolü ve Firestore emülatöründe güvenlik kuralı testleri. | `.github/workflows/ci.yml` |
 
 ## Sprint 1 — Temel Kullanıcı Sistemi ve UI Altyapısı
