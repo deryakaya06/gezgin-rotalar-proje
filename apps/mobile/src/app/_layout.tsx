@@ -77,6 +77,9 @@ function RootNavigator() {
         <Stack.Protected guard={!!user}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="welcome" />
+          <Stack.Screen name="user/[id]" />
+          <Stack.Screen name="search" />
+          <Stack.Screen name="follows" />
         </Stack.Protected>
 
         <Stack.Protected guard={!user}>

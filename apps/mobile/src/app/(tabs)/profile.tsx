@@ -1,8 +1,10 @@
 import { ScrollView, StyleSheet, useColorScheme, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 
+import { ProfileSummary } from '@/components/profile-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
@@ -14,6 +16,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function ProfileScreen() {
   const { user, profile } = useAuth();
+  const router = useRouter();
   const theme = useTheme();
   const scheme = useColorScheme();
 
@@ -47,20 +50,11 @@ export default function ProfileScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="subtitle">Profil</ThemedText>
 
-          <Card style={styles.card}>
-            <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
-              <Ionicons
-                name="person"
-                size={70}
-                color={scheme === 'dark' ? theme.placeholder : theme.background}
-                style={styles.silhouette}
-              />
+          <ProfileSummary uid={user?.uid} profile={profile}>
+            <View style={styles.searchWrap}>
+              <Button title="Gezgin Ara" variant="outline" onPress={() => router.push('/search')} />
             </View>
-            <ThemedText type="heading">{profile?.displayName ?? 'Yükleniyor...'}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {profile?.accountType === 'couple' ? '💑 Çift Hesabı' : '👥 Arkadaş Grubu Hesabı'}
-            </ThemedText>
-          </Card>
+          </ProfileSummary>
 
           <Card style={styles.rows}>
             {rows.map((row, index) => (
@@ -95,16 +89,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
     gap: Spacing.four,
   },
-  card: { alignItems: 'center', gap: Spacing.one, padding: Spacing.four },
-  avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    overflow: 'hidden',
-    marginBottom: Spacing.two,
-  },
-  silhouette: { marginTop: 24 },
+  searchWrap: { alignSelf: 'stretch', marginTop: Spacing.three },
   rows: { paddingVertical: 0 },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.three },
   rowText: { flex: 1, gap: 2 },

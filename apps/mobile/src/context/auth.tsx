@@ -4,6 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { COLLECTIONS, type UserProfile } from '@repo/shared';
 
 import { auth, db } from '@/firebase';
+import { syncSearchName } from '@/services/users';
 
 type AuthState = {
   user: User | null;
@@ -36,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
+    // Arama alanı bu oturumda yalnızca bir kez denenir. Reddedilen bir yazma dinleyiciyi
+    // yeniden tetiklediği için her bildirimde denemek sonsuz döngüye yol açar.
+    let searchNameSynced = false;
     return onSnapshot(
       doc(db, COLLECTIONS.users, user.uid),
       (snapshot) => {
@@ -43,7 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfileState({ uid: user.uid, data: null });
           return;
         }
-        setProfileState({ uid: user.uid, data: snapshot.data() as UserProfile });
+        const data = snapshot.data() as UserProfile;
+        setProfileState({ uid: user.uid, data });
+        // Sprint 1'de açılmış (arama alanı olmayan) hesaplar ilk girişte aramaya eklenir.
+        if (!searchNameSynced) {
+          searchNameSynced = true;
+          syncSearchName(user.uid, data)?.catch((error) => {
+            console.log('Arama alanı güncellenemedi:', error.message);
+          });
+        }
       },
       (error) => {
         console.log('Profil dinlenemedi:', error.message);

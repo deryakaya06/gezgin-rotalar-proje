@@ -2,9 +2,17 @@
 
 Çiftlerin ve arkadaş gruplarının İstanbul'da gezdikleri yerlerde check-in yapıp puan topladığı, birbirlerinin rotalarını takip ettiği mobil uygulama.
 
-**Durum:** Sprint 0 (Kurulum ve Planlama) ve Sprint 1 (Temel Kullanıcı Sistemi ve UI Altyapısı) tamamlandı. Ayrıntılar: [docs/sprint-0-1.md](docs/sprint-0-1.md)
+**Durum:** Sprint 0, 1 ve 2 tamamlandı.
 
-## Özellikler (Sprint 1)
+| Sprint | Konu | Rapor |
+|---|---|---|
+| 0 | Kurulum ve Planlama | [docs/sprint-0-1.md](docs/sprint-0-1.md) |
+| 1 | Temel Kullanıcı Sistemi ve UI Altyapısı | [docs/sprint-0-1.md](docs/sprint-0-1.md) |
+| 2 | Profil ve Takip Sistemi | [docs/sprint-2.md](docs/sprint-2.md) |
+
+## Özellikler
+
+**Sprint 1**
 
 - E-posta ve şifreyle kayıt olma; hesap türü seçimi (**Çift** / **Arkadaşlar**)
 - Giriş, çıkış ve oturumun korunması (uygulama kapatılıp açılsa da)
@@ -12,6 +20,13 @@
 - Cihaz temasına göre değişen açık / koyu renk paleti
 - 4 sekmeli ana yapı: Akış, Keşfet, Rotalar, Profil (ilk üçü sonraki sprintlerde doldurulacak)
 - Firestore güvenlik kuralları ve otomatik testleri
+
+**Sprint 2**
+
+- Kullanıcı arama (görünen adla, Türkçe karakter ve büyük/küçük harf duyarsız)
+- Başka kullanıcıların profil sayfası
+- Takip et / takibi bırak; takipçi ve takip sayıları
+- Takipçiler ve Takip Edilenler listeleri
 
 ## Yapı
 

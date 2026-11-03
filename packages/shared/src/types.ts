@@ -7,7 +7,11 @@ export type FirestoreTimestamp = { toDate(): Date };
 
 export type AccountType = 'couple' | 'friends';
 
-/** users/{uid} — herkese açık profil. E-posta burada tutulmaz, Firebase Auth'ta kalır. */
+/**
+ * users/{uid} — herkese açık profil. E-posta burada tutulmaz, Firebase Auth'ta kalır.
+ * Takipçi/takip sayıları alan olarak tutulmaz; followers/following alt
+ * koleksiyonlarından count() ile hesaplanır.
+ */
 export type UserProfile = {
   displayName: string;
   accountType: AccountType;
@@ -15,6 +19,13 @@ export type UserProfile = {
   totalPoints: number;
   /** Ziyaret edilen mekan sayısı (Sprint 4); kayıtta 0. */
   visitCount: number;
+  createdAt: FirestoreTimestamp | null;
+  /** searchKey(displayName); kullanıcı araması için. */
+  searchName?: string;
+};
+
+/** users/{uid}/following/{targetId} ve users/{uid}/followers/{followerId} */
+export type FollowEntry = {
   createdAt: FirestoreTimestamp | null;
 };
 
