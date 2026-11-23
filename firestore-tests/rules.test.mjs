@@ -1,5 +1,6 @@
 // firestore.rules için emülatör testleri. Çalıştırma: npm test
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { after, describe, test } from 'node:test';
 
 import { deleteApp, initializeApp } from 'firebase/app';
@@ -42,6 +43,26 @@ async function signUp(name) {
   const { auth, db } = connect(name);
   const cred = await createUserWithEmailAndPassword(auth, `${name}-${Date.now()}@test.com`, 'secret123');
   return { uid: cred.user.uid, db };
+}
+
+// "Bearer owner" ile emülatörün REST API'si kuralları atlar (veri hazırlamak için).
+async function adminSet(path, fields) {
+  const res = await fetch(
+    `http://${fsHost}:${fsPort}/v1/projects/${PROJECT_ID}/databases/(default)/documents/${path}`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: Object.fromEntries(
+          Object.entries(fields).map(([k, v]) => [
+            k,
+            typeof v === 'number' ? { integerValue: String(v) } : { stringValue: String(v) },
+          ])
+        ),
+      }),
+    }
+  );
+  assert.ok(res.ok, `adminSet ${path}: ${res.status}`);
 }
 
 /** apps/mobile/src/services/users.ts createUserProfile ile aynı alanlar. */
@@ -209,5 +230,82 @@ describe('kullanıcı arama', () => {
     const names = snap.docs.map((d) => d.get('searchName'));
     assert.ok(names.includes('aydin & ece'));
     assert.ok(!names.includes('zeynep'));
+  });
+});
+
+describe('locations (admin)', () => {
+  const validLocation = () => ({
+    name: 'Moda Sahili',
+    description: 'Gün batımı için.',
+    district: 'Kadıköy',
+    category: 'Park',
+    coordinates: { latitude: 40.981, longitude: 29.026 },
+    rating: 4.7,
+    isFree: true,
+    isSponsored: false,
+    sponsorInfo: null,
+  });
+
+  async function adminUser() {
+    const admin = await newUser('admin');
+    await adminSet(`users/${admin.uid}`, {
+      displayName: 'admin',
+      accountType: 'friends',
+      totalPoints: 0,
+      visitCount: 0,
+      role: 'admin',
+    });
+    return admin;
+  }
+
+  test('admin mekan ekleyebilir ve güncelleyebilir', async () => {
+    const admin = await adminUser();
+    await setDoc(doc(admin.db, 'locations', 'moda'), validLocation());
+    await updateDoc(doc(admin.db, 'locations', 'moda'), {
+      isSponsored: true,
+      sponsorInfo: { name: 'Moda Kahvecisi', offer: 'Check-in yapana %10 indirim' },
+    });
+  });
+
+  test('admin kapak fotoğrafı ekleyebilir, başka siteden adres reddedilir', async () => {
+    const admin = await adminUser();
+    const rulesText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+    const cloudName = rulesText.match(/function cloudinaryCloudName\(\) \{\s*return '([^']+)'/)[1];
+    await setDoc(doc(admin.db, 'locations', 'kapakli'), {
+      ...validLocation(),
+      coverPhotoUrl: `https://res.cloudinary.com/${cloudName}/image/upload/v1/kapak.jpg`,
+      coverPhotoCredit: 'A.Savin · FAL',
+      coverPhotoSource: 'https://commons.wikimedia.org/wiki/File:Ornek.jpg',
+    });
+    await assert.rejects(
+      setDoc(doc(admin.db, 'locations', 'kapaksiz'), {
+        ...validLocation(),
+        coverPhotoUrl: 'https://kotu-site.com/kapak.jpg',
+      })
+    );
+  });
+
+  test('normal kullanıcı mekan ekleyemez', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(setDoc(doc(bob.db, 'locations', 'sahte'), validLocation()));
+  });
+
+  test('geçersiz mekan verisi reddedilir', async () => {
+    const admin = await adminUser();
+    await assert.rejects(setDoc(doc(admin.db, 'locations', 'x1'), { ...validLocation(), rating: 9 }));
+    await assert.rejects(
+      setDoc(doc(admin.db, 'locations', 'x2'), {
+        ...validLocation(),
+        coordinates: { latitude: 200, longitude: 29 },
+      })
+    );
+    await assert.rejects(setDoc(doc(admin.db, 'locations', 'x3'), { ...validLocation(), hack: true }));
+  });
+
+  test('kullanıcı kendine admin rolü veremez', async () => {
+    const eve = await signUp('eve');
+    await assert.rejects(setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Eve'), role: 'admin' }));
+    const bob = await newUser('bob');
+    await assert.rejects(updateDoc(doc(bob.db, 'users', bob.uid), { role: 'admin' }));
   });
 });

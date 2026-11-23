@@ -1,5 +1,6 @@
 export const COLLECTIONS = {
   users: 'users',
+  locations: 'locations',
 } as const;
 
 /** Firebase istemci yapılandırması (gizli değil); mobil uygulama ve admin paneli ortak kullanır. */

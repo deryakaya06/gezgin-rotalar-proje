@@ -29,4 +29,39 @@ export type FollowEntry = {
   createdAt: FirestoreTimestamp | null;
 };
 
+export type Coordinates = { latitude: number; longitude: number };
+
+export type SponsorInfo = {
+  /** Sponsor firmanın adı (ör. kafe zinciri). */
+  name: string;
+  /** Kullanıcıya gösterilecek kampanya/indirim metni. */
+  offer?: string;
+  url?: string;
+};
+
+/**
+ * locations/{id} — yalnızca admin yazabilir (firestore.rules).
+ * İlk sürümde eklenen mekanlarda name/description dışındaki alanlar olmayabilir.
+ */
+export type Location = {
+  name: string;
+  description: string;
+  /** İlçe, ör. "Kadıköy". Keşfet'teki hızlı filtreler bunu kullanır. */
+  district?: string;
+  /** Ör. "Tarihi", "Müze", "Park", "Manzara", "Çarşı". */
+  category?: string;
+  coordinates?: Coordinates;
+  /** 0–5 arası ortalama puan. */
+  rating?: number;
+  isFree?: boolean;
+  isSponsored?: boolean;
+  sponsorInfo?: SponsorInfo | null;
+  /** Cloudinary'deki kapak fotoğrafı. */
+  coverPhotoUrl?: string;
+  /** Fotoğrafçı ve lisans, ör. "A.Savin · FAL" (lisans gereği gösterilir). */
+  coverPhotoCredit?: string;
+  /** Fotoğrafın kaynağı (Wikimedia Commons sayfası). */
+  coverPhotoSource?: string;
+};
+
 export type WithId<T> = T & { id: string };

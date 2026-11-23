@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Sprint 2: kullanıcı profilleri ve takip sistemi. Kuralı olmayan her koleksiyon varsayılan olarak kapalıdır.
+// Sprint 3: kullanıcı profilleri, takip sistemi ve mekanlar. Kuralı olmayan her koleksiyon varsayılan olarak kapalıdır.
 // Takipçi/takip sayıları alan olarak tutulmaz, count() sorgusuyla hesaplanır.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -23,6 +23,47 @@ service cloud.firestore {
 
     function followerPath(uid, followerId) {
       return /databases/$(database)/documents/users/$(uid)/followers/$(followerId);
+    }
+
+    // packages/shared/src/constants.ts içindeki Cloudinary hesabı (mekan kapak fotoğrafları).
+    function cloudinaryCloudName() {
+      return 'lgk3ljrv';
+    }
+
+    function validPhotoUrl(url) {
+      return url is string
+        && url.size() <= 300
+        && url.matches('https://res[.]cloudinary[.]com/' + cloudinaryCloudName() + '/image/upload/.+');
+    }
+
+    // role alanını yalnızca Firebase Console'dan (kuralları atlayarak) eklemek mümkündür;
+    // kullanıcı kendi profiline role yazamaz (create/update kuralları buna izin vermez).
+    function isAdmin() {
+      return signedIn() && get(userPath(request.auth.uid)).data.get('role', '') == 'admin';
+    }
+
+    function validLocation(data) {
+      return data.keys().hasOnly([
+          'name', 'description', 'district', 'category', 'coordinates', 'rating',
+          'isFree', 'isSponsored', 'sponsorInfo', 'createdAt', 'updatedAt',
+          'coverPhotoUrl', 'coverPhotoCredit', 'coverPhotoSource'
+        ])
+        && (!('coverPhotoUrl' in data) || validPhotoUrl(data.coverPhotoUrl))
+        && data.get('coverPhotoCredit', '') is string && data.get('coverPhotoCredit', '').size() <= 200
+        && data.get('coverPhotoSource', '') is string && data.get('coverPhotoSource', '').size() <= 500
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.description is string && data.description.size() <= 1000
+        && data.get('district', '') is string
+        && data.get('category', '') is string
+        && (!('coordinates' in data) || (
+          data.coordinates.keys().hasOnly(['latitude', 'longitude'])
+          && data.coordinates.latitude is number && data.coordinates.latitude >= -90 && data.coordinates.latitude <= 90
+          && data.coordinates.longitude is number && data.coordinates.longitude >= -180 && data.coordinates.longitude <= 180
+        ))
+        && (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5))
+        && data.get('isFree', false) is bool
+        && data.get('isSponsored', false) is bool
+        && (data.get('sponsorInfo', null) == null || data.sponsorInfo.name is string);
     }
 
     function validProfileFields(data) {
@@ -83,6 +124,13 @@ service cloud.firestore {
         allow delete: if isOwner(followerId)
           && !existsAfter(followingPath(followerId, uid));
       }
+    }
+
+    // Mekanları herkes okur, yalnızca admin yazar.
+    match /locations/{locationId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() && validLocation(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }
