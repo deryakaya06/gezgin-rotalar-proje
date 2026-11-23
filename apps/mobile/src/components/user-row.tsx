@@ -35,7 +35,7 @@ export function UserRow({ user }: { user: WithId<UserProfile> }) {
             {user.displayName} {isMe ? '(Sen)' : ''}
           </ThemedText>
           <ThemedText type="caption" themeColor="textSecondary">
-            {user.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'}
+            {user.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} · {user.totalPoints ?? 0} puan
           </ThemedText>
         </View>
       </Pressable>

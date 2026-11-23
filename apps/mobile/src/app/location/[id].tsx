@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -11,23 +11,40 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import type { Location, WithId } from '@repo/shared';
+import {
+  DUPLICATE_CHECKIN_WINDOW_HOURS,
+  POINTS_PER_CHECKIN,
+  type Location,
+  type WithId,
+} from '@repo/shared';
 
 import { LocationMap } from '@/components/location-map';
+import { PhotoPicker } from '@/components/photo-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
+import { TextField } from '@/components/ui/text-field';
 import { ContentColumn, OnPhoto, Radius, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/auth';
+import { useScrollToInput } from '@/hooks/use-scroll-to-input';
 import { useTheme } from '@/hooks/use-theme';
+import { createCheckIn } from '@/services/checkins';
 import { directionsUrl, fetchLocation } from '@/services/locations';
-import { photoThumbnail } from '@/services/photos';
+import {
+  isPhotoUploadConfigured,
+  photoThumbnail,
+  uploadPhoto,
+  type PickedPhoto,
+} from '@/services/photos';
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const theme = useTheme();
+  const { scrollRef, inputProps } = useScrollToInput();
 
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -47,6 +64,10 @@ export default function LocationDetailScreen() {
 
   const [location, setLocation] = useState<WithId<Location> | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'notFound'>('loading');
+  const [note, setNote] = useState('');
+  const [message, setMessage] = useState('');
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  const [saving, setSaving] = useState<false | 'uploading' | 'saving'>(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +85,41 @@ export default function LocationDetailScreen() {
       cancelled = true;
     };
   }, [id]);
+
+  async function handleCheckIn() {
+    if (!user || !location) return;
+
+    setMessage('');
+    let photoUrl: string | undefined;
+    if (photo) {
+      setSaving('uploading');
+      try {
+        photoUrl = await uploadPhoto(photo);
+      } catch (error: any) {
+        setMessage('Fotoğraf yüklenemedi: ' + error.message);
+        setSaving(false);
+        return;
+      }
+    }
+
+    setSaving('saving');
+    createCheckIn(user.uid, { id: location.id, name: location.name }, note.trim(), photoUrl)
+      .then((points) => {
+        setMessage(
+          points > 0
+            ? `Check-in başarılı! +${points} puan kazandın.`
+            : `Check-in kaydedildi. Bu mekana son ${DUPLICATE_CHECKIN_WINDOW_HOURS} saatte zaten check-in yaptığın için puan verilmedi.`
+        );
+        setNote('');
+        setPhoto(null);
+      })
+      .catch((error) => {
+        setMessage('Hata: ' + error.message);
+      })
+      .finally(() => {
+        setSaving(false);
+      });
+  }
 
   if (status !== 'ready' || !location) {
     return (
@@ -85,7 +141,11 @@ export default function LocationDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={hasCover ? ['left', 'right', 'bottom'] : undefined}>
+        {/* iOS'ta klavye boşluğunu ScrollView kendisi ayarlar; ikisi birlikte çakışır. */}
+        <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === 'android' ? 'padding' : undefined}>
         <Animated.ScrollView
+          ref={scrollRef}
+          automaticallyAdjustKeyboardInsets
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
@@ -173,8 +233,44 @@ export default function LocationDetailScreen() {
               </>
             ) : null}
 
+            <View style={styles.checkIn}>
+              {isPhotoUploadConfigured ? (
+                <>
+                  <ThemedText type="smallBold">Fotoğraf (isteğe bağlı)</ThemedText>
+                  <PhotoPicker photo={photo} onChange={setPhoto} disabled={!!saving} />
+                </>
+              ) : null}
+
+              <ThemedText type="smallBold">Not (isteğe bağlı)</ThemedText>
+              <TextField
+                style={styles.noteInput}
+                placeholder="Bu mekanda neler yaşadın?"
+                value={note}
+                onChangeText={setNote}
+                maxLength={500}
+                multiline
+                {...inputProps}
+              />
+              <Button
+                title={
+                  saving === 'uploading'
+                    ? 'Fotoğraf yükleniyor...'
+                    : saving === 'saving'
+                      ? 'Kaydediliyor...'
+                      : `Check-in Yap (+${POINTS_PER_CHECKIN} Puan)`
+                }
+                onPress={handleCheckIn}
+                disabled={!!saving}
+              />
+              {message ? (
+                <ThemedText type="small" style={styles.centered}>
+                  {message}
+                </ThemedText>
+              ) : null}
+            </View>
           </View>
         </Animated.ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -185,6 +281,7 @@ const HERO_HEIGHT = 340;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { ...ContentColumn, flex: 1 },
+  keyboard: { flex: 1 },
   content: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
@@ -205,5 +302,7 @@ const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   sponsorCard: { gap: Spacing.one },
   map: { height: 180 },
+  checkIn: { gap: Spacing.two, marginTop: Spacing.three },
+  noteInput: { minHeight: 96, textAlignVertical: 'top' },
   centered: { textAlign: 'center' },
 });

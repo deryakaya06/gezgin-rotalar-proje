@@ -1,7 +1,7 @@
 // firestore.rules için emülatör testleri. Çalıştırma: npm test
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { after, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 
 import { deleteApp, initializeApp } from 'firebase/app';
 import { connectAuthEmulator, createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
@@ -14,6 +14,7 @@ import {
   getDoc,
   getDocs,
   getFirestore,
+  increment,
   orderBy,
   query,
   serverTimestamp,
@@ -25,6 +26,7 @@ import {
 } from 'firebase/firestore';
 
 const PROJECT_ID = 'demo-gezgin';
+const POINTS = 10;
 const [fsHost, fsPort] = process.env.FIRESTORE_EMULATOR_HOST.split(':');
 const [authHost, authPort] = process.env.FIREBASE_AUTH_EMULATOR_HOST.split(':');
 const apps = [];
@@ -89,6 +91,43 @@ function followBatch(me, targetUid, { following = true, mirror = true, remove = 
   if (mirror) remove ? batch.delete(mirrorRef) : batch.set(mirrorRef, { createdAt: serverTimestamp() });
   return batch.commit();
 }
+
+/** apps/mobile/src/services/checkins.ts ile aynı batch; overrides ile hile denenir. */
+function checkInBatch(user, { points = POINTS, writeVisit = points > 0, writeUser = true, ...overrides } = {}) {
+  const ref = doc(collection(user.db, 'check_ins'));
+  const batch = writeBatch(user.db);
+  batch.set(ref, {
+    userId: user.uid,
+    locationId: 'galata',
+    locationName: 'Galata Kulesi',
+    note: '',
+    points,
+    createdAt: serverTimestamp(),
+    ...overrides,
+  });
+  if (writeUser) {
+    batch.update(doc(user.db, 'users', user.uid), {
+      totalPoints: increment(points),
+      visitCount: increment(1),
+      lastCheckInId: ref.id,
+    });
+  }
+  if (writeVisit) {
+    batch.set(doc(user.db, 'users', user.uid, 'visits', 'galata'), {
+      lastAwardedAt: serverTimestamp(),
+      checkInId: ref.id,
+    });
+  }
+  return batch.commit();
+}
+
+async function profileOf(user, uid = user.uid) {
+  return (await getDoc(doc(user.db, 'users', uid))).data();
+}
+
+before(async () => {
+  await adminSet('locations/galata', { name: 'Galata Kulesi', description: 'test' });
+});
 
 after(async () => {
   for (const app of apps) {
@@ -307,5 +346,93 @@ describe('locations (admin)', () => {
     await assert.rejects(setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Eve'), role: 'admin' }));
     const bob = await newUser('bob');
     await assert.rejects(updateDoc(doc(bob.db, 'users', bob.uid), { role: 'admin' }));
+  });
+});
+
+describe('check_ins', () => {
+  test('geçerli check-in puan ve ziyaret sayısını artırır', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const p = await profileOf(bob);
+    assert.equal(p.totalPoints, POINTS);
+    assert.equal(p.visitCount, 1);
+  });
+
+  test('24 saat içinde aynı mekandan ikinci kez puan alınamaz, puansız check-in olur', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    await assert.rejects(checkInBatch(bob), 'ikinci puanli check-in reddedilmeli');
+    await checkInBatch(bob, { points: 0 });
+    const p = await profileOf(bob);
+    assert.equal(p.totalPoints, POINTS);
+    assert.equal(p.visitCount, 2);
+  });
+
+  test('puan miktarı değiştirilemez', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(checkInBatch(bob, { points: 1000 }));
+  });
+
+  test('visits kaydı olmadan puanlı check-in yapılamaz', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(checkInBatch(bob, { writeVisit: false }));
+  });
+
+  test('sayaç güncellenmeden check-in yapılamaz', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(checkInBatch(bob, { writeUser: false }));
+  });
+
+  test('mevcut bir check-in ile tekrar puan toplanamaz', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await assert.rejects(
+      updateDoc(doc(bob.db, 'users', bob.uid), {
+        totalPoints: increment(POINTS),
+        visitCount: increment(1),
+        lastCheckInId,
+      })
+    );
+  });
+
+  test('yanlış mekan adı, olmayan mekan veya başkası adına check-in reddedilir', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(checkInBatch(bob, { locationName: 'Sahte Ad' }));
+    await assert.rejects(checkInBatch(bob, { locationId: 'olmayan', writeVisit: false, points: 0 }));
+    await assert.rejects(checkInBatch(bob, { userId: 'baska-biri', points: 0 }));
+  });
+
+  test('check-in tek başına silinemez; puan geri alınmalı', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    const batch = writeBatch(bob.db);
+    batch.delete(doc(bob.db, 'check_ins', lastCheckInId));
+    await assert.rejects(batch.commit());
+  });
+});
+
+describe('check-in fotoğrafı', () => {
+  // Kurallardaki cloudinaryCloudName() değerini okur; adı değişince test de uyum sağlar.
+  const rulesText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+  const cloudName = rulesText.match(/function cloudinaryCloudName\(\) \{\s*return '([^']+)'/)[1];
+  const valid = `https://res.cloudinary.com/${cloudName}/image/upload/v1/check-ins/abc.jpg`;
+
+  test('kendi Cloudinary hesabımızdaki fotoğraf kabul edilir', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob, { photoUrl: valid });
+  });
+
+  test('başka site veya başka Cloudinary hesabı reddedilir', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(checkInBatch(bob, { photoUrl: 'https://kotu-site.com/foto.jpg', points: 0, writeVisit: false }));
+    await assert.rejects(
+      checkInBatch(bob, {
+        photoUrl: 'https://res.cloudinary.com/baska-hesap/image/upload/x.jpg',
+        points: 0,
+        writeVisit: false,
+      })
+    );
   });
 });

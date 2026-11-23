@@ -15,11 +15,13 @@ export type AccountType = 'couple' | 'friends';
 export type UserProfile = {
   displayName: string;
   accountType: AccountType;
-  /** Check-in'lerle kazanılan puan (Sprint 4); kayıtta 0. */
+  /** Check-in'lerle kazanılan puan; kayıtta 0. */
   totalPoints: number;
-  /** Ziyaret edilen mekan sayısı (Sprint 4); kayıtta 0. */
+  /** Yapılan check-in sayısı; kayıtta 0. */
   visitCount: number;
   createdAt: FirestoreTimestamp | null;
+  /** Son check-in'in id'si; kuralların puan artışını doğrulaması için. */
+  lastCheckInId?: string;
   /** searchKey(displayName); kullanıcı araması için. */
   searchName?: string;
 };
@@ -62,6 +64,25 @@ export type Location = {
   coverPhotoCredit?: string;
   /** Fotoğrafın kaynağı (Wikimedia Commons sayfası). */
   coverPhotoSource?: string;
+};
+
+/** users/{uid}/visits/{locationId} — mekandan en son puan alınan zaman. */
+export type Visit = {
+  lastAwardedAt: FirestoreTimestamp;
+  checkInId: string;
+};
+
+/** check_ins/{id} */
+export type CheckIn = {
+  userId: string;
+  locationId: string;
+  locationName: string;
+  note: string;
+  /** POINTS_PER_CHECKIN ya da (24 saat içinde tekrar ise) 0. */
+  points: number;
+  /** Cloudinary'deki fotoğrafın adresi (https://res.cloudinary.com/...). */
+  photoUrl?: string;
+  createdAt: FirestoreTimestamp | null;
 };
 
 export type WithId<T> = T & { id: string };

@@ -78,6 +78,7 @@ function RootNavigator() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="welcome" />
           <Stack.Screen name="location/[id]" />
+          <Stack.Screen name="leaderboard" />
           <Stack.Screen name="user/[id]" />
           <Stack.Screen name="search" />
           <Stack.Screen name="follows" />

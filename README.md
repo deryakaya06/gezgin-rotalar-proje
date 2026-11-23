@@ -2,7 +2,7 @@
 
 Çiftlerin ve arkadaş gruplarının İstanbul'da gezdikleri yerlerde check-in yapıp puan topladığı, birbirlerinin rotalarını takip ettiği mobil uygulama.
 
-**Durum:** Sprint 0, 1, 2 ve 3 tamamlandı.
+**Durum:** Sprint 0, 1, 2, 3 ve 4 tamamlandı.
 
 | Sprint | Konu | Rapor |
 |---|---|---|
@@ -10,6 +10,7 @@
 | 1 | Temel Kullanıcı Sistemi ve UI Altyapısı | [docs/sprint-0-1.md](docs/sprint-0-1.md) |
 | 2 | Profil ve Takip Sistemi | [docs/sprint-2.md](docs/sprint-2.md) |
 | 3 | Keşfet, Mekanlar ve Harita | [docs/sprint-3.md](docs/sprint-3.md) |
+| 4 | Check-in ve Oyunlaştırma | [docs/sprint-4.md](docs/sprint-4.md) |
 
 ## Özellikler
 
@@ -35,6 +36,14 @@
 - Mekan arama; puan, ücretsiz giriş ve ilçe filtreleri
 - Liste ve harita görünümü
 - Mekan detay sayfası ve yol tarifi
+
+**Sprint 4**
+
+- Mekan detayından check-in; not ve kamera/galeriden fotoğraf
+- Check-in başına 10 puan; aynı mekanda 24 saat içinde tekrar puan yok
+- Profilde puan, check-in sayısı ve rozetler
+- Rotalarım: geçmiş check-in'ler
+- Lider tablosu
 
 ## Yapı
 

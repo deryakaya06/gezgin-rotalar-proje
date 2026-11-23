@@ -73,6 +73,7 @@ export default function ProfileScreen() {
             ))}
           </Card>
 
+          <Button title="Lider Tablosunu Gör" onPress={() => router.push('/leaderboard')} />
           <Button title="Çıkış Yap" variant="outline" onPress={handleLogout} />
         </ScrollView>
       </SafeAreaView>
