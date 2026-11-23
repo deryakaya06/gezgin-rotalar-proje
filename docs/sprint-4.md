@@ -1,6 +1,6 @@
 # Sprint 4 — Check-in ve Oyunlaştırma
 
-**Süre:** 17.11.2026 – 30.11.2026
+**Süre:** 17.11.2026 – 24.11.2026
 
 **Hedef:** kullanıcıların bir mekanı ziyaret edip puan kazanabilmesi.
 

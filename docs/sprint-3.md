@@ -1,6 +1,6 @@
 # Sprint 3 — Keşfet, Mekanlar ve Harita Altyapısı
 
-**Süre:** 03.11.2026 – 16.11.2026
+**Süre:** 09.11.2026 – 16.11.2026
 
 **Hedef:** kullanıcıların gezilecek yerleri görüp arayabilmesi ve rota özelliğinin veri temelinin atılması.
 
