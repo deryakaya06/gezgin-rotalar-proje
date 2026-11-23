@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   title: { textAlign: 'center', marginBottom: Spacing.three },
-  typeRow: { flexDirection: 'row', gap: Spacing.three, justifyContent: 'center' },
+  typeRow: { flexDirection: 'row', gap: Spacing.two, justifyContent: 'center' },
   switchText: { textAlign: 'center', textDecorationLine: 'underline' },
   message: { textAlign: 'center' },
 });
